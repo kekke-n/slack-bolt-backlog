@@ -66,7 +66,12 @@ app.shortcut('report_bug', async ({ shortcut, ack, context }) => {
         "type": "modal",
         "title": {
           "type": "plain_text",
-          "text": "My App"
+          "text": "Report Bug"
+        },
+        "submit": {
+          "type": "plain_text",
+          "text": "Submit",
+          "emoji": true
         },
         "close": {
           "type": "plain_text",
@@ -74,21 +79,55 @@ app.shortcut('report_bug', async ({ shortcut, ack, context }) => {
         },
         "blocks": [
           {
-            "type": "section",
-            "text": {
-              "type": "mrkdwn",
-              "text": "About the simplest modal you could conceive of :smile:\n\nMaybe <https://api.slack.com/reference/block-kit/interactive-components|*make the modal interactive*> or <https://api.slack.com/surfaces/modals/using#modifying|*learn more advanced modal use cases*>."
+            "type": "input",
+            "block_id": "title",
+            "label": {
+              "type": "plain_text",
+              "text": "Title"
+            },
+            "element": {
+              "type": "plain_text_input",
+              "action_id": "plain_input",
+              "placeholder": {
+                "type": "plain_text",
+                "text": "Enter some plain text"
+              }
             }
           },
           {
-            "type": "context",
-            "elements": [
-              {
-                "type": "mrkdwn",
-                "text": "Psssst this modal was designed using <https://api.slack.com/tools/block-kit-builder|*Block Kit Builder*>"
+            "type": "input",
+            "block_id": "description",
+            "label": {
+              "type": "plain_text",
+              "text": "Description"
+            },
+            "element": {
+              "type": "plain_text_input",
+              "action_id": "plain_input",
+              "multiline": true,
+              "initial_value": shortcut.message.text,
+              "placeholder": {
+                "type": "plain_text",
+                "text": "Enter some plain text"
               }
-            ]
-          }
+            }
+          },
+          // {
+          //   "type": "section",
+          //   "text": {
+          //     "type": "mrkdwn",
+          //     "text": "About the simplest modal you could conceive of :smile:\n\nMaybe <https://api.slack.com/reference/block-kit/interactive-components|*make the modal interactive*> or <https://api.slack.com/surfaces/modals/using#modifying|*learn more advanced modal use cases*>."
+          //   }
+          // },
+          // {
+          //   "type": "context",
+          //   "elements": [
+          //     {
+          //       "type": "mrkdwn",
+          //       "text": "Psssst this modal was designed using <https://api.slack.com/tools/block-kit-builder|*Block Kit Builder*>"
+          //     }
+          //   ]
+          // }
         ]
       }
     });
