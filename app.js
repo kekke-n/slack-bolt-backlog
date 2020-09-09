@@ -4,9 +4,8 @@ const { App } = require('@slack/bolt');
 // Initializes your app with your bot token and signing secret
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
-  signingSecret: process.env.SLACK_SIGNING_SECRET
+  signingSecret: process.env.SLACK_SIGNING_SECRET,
 });
-
 
 // Listens to incoming messages that contain "hello"
 // app.message('hello', async ({ message, say }) => {
@@ -64,6 +63,7 @@ app.shortcut('report_bug', async ({ shortcut, ack, context }) => {
       trigger_id: shortcut.trigger_id,
       view: {
         "type": "modal",
+        "callback_id": 'report_issue',
         "title": {
           "type": "plain_text",
           "text": "Report Bug"
@@ -71,7 +71,7 @@ app.shortcut('report_bug', async ({ shortcut, ack, context }) => {
         "submit": {
           "type": "plain_text",
           "text": "Submit",
-          "emoji": true
+          "emoji": true,
         },
         "close": {
           "type": "plain_text",
@@ -110,7 +110,7 @@ app.shortcut('report_bug', async ({ shortcut, ack, context }) => {
                 "type": "plain_text",
                 "text": "Enter some plain text"
               }
-            }
+            },
           },
           // {
           //   "type": "section",
@@ -138,6 +138,43 @@ app.shortcut('report_bug', async ({ shortcut, ack, context }) => {
     console.error(error);
   }
 });
+
+app.view('report_issue', async ({ ack, body, view, context }) => {
+  await ack();
+  try {
+    const result = await app.client.views.open({
+      token: context.botToken,
+      trigger_id: body.trigger_id,
+      view: {
+        "type": "modal",
+        "callback_id": 'report_issue',
+        "title": {
+          "type": "plain_text",
+          "text": "Report Bug"
+        },
+        "close": {
+          "type": "plain_text",
+          "text": "Close"
+        },
+        "blocks": [
+          {
+            "type": "section",
+            "text": {
+              "type": "mrkdwn",
+              "text": "Reported Bug."
+            }
+          },
+        ]
+      }
+    });
+
+    console.log(result);
+  }
+  catch (error) {
+    console.error(error);
+  }
+});
+
 
 (async () => {
   // Start your app
