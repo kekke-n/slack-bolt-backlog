@@ -7,37 +7,6 @@ const app = new App({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
 });
 
-// Listens to incoming messages that contain "hello"
-// app.message('hello', async ({ message, say }) => {
-//   // say() sends a message to the channel where the event was triggered
-//   await say(`Hey there <@${message.user}>!`);
-// });
-
-// Listens to incoming messages that contain "hello"
-app.message('hello', async ({ message, say }) => {
-  // say() sends a message to the channel where the event was triggered
-  await say({
-    blocks: [
-      {
-        "type": "section",
-        "text": {
-          "type": "mrkdwn",
-          "text": `Hey there <@${message.user}>!`
-        },
-        "accessory": {
-          "type": "button",
-          "text": {
-            "type": "plain_text",
-            "text": "Click Me"
-          },
-          "action_id": "button_click"
-        }
-      }
-    ],
-    text: `Hey there <@${message.user}>!`
-  });
-});
-
 app.action('button_click', async ({ body, ack, say }) => {
   // Acknowledge the action
   await ack();
@@ -49,14 +18,10 @@ app.action({ callback_id: 'report_bug'}, async({action, ack}) => {
   await say('登録しました');
 });
 
-
-// open_modal というグローバルショートカットはシンプルなモーダルを開く
 app.shortcut('report_bug', async ({ shortcut, ack, context }) => {
-  // グローバルショートカットリクエストの確認
   ack();
 
   try {
-    // 組み込みの WebClient を使って views.open API メソッドを呼び出す
     const result = await app.client.views.open({
       // `context` オブジェクトに保持されたトークンを使用
       token: context.botToken,
@@ -112,22 +77,6 @@ app.shortcut('report_bug', async ({ shortcut, ack, context }) => {
               }
             },
           },
-          // {
-          //   "type": "section",
-          //   "text": {
-          //     "type": "mrkdwn",
-          //     "text": "About the simplest modal you could conceive of :smile:\n\nMaybe <https://api.slack.com/reference/block-kit/interactive-components|*make the modal interactive*> or <https://api.slack.com/surfaces/modals/using#modifying|*learn more advanced modal use cases*>."
-          //   }
-          // },
-          // {
-          //   "type": "context",
-          //   "elements": [
-          //     {
-          //       "type": "mrkdwn",
-          //       "text": "Psssst this modal was designed using <https://api.slack.com/tools/block-kit-builder|*Block Kit Builder*>"
-          //     }
-          //   ]
-          // }
         ]
       }
     });
@@ -141,6 +90,10 @@ app.shortcut('report_bug', async ({ shortcut, ack, context }) => {
 
 app.view('report_issue', async ({ ack, body, view, context }) => {
   await ack();
+
+  const title = view.state.values.title.plain_input.value;
+  const description = view.state.values.description.plain_input.value;
+  createIssue(title, description);
   try {
     const result = await app.client.views.open({
       token: context.botToken,
@@ -175,10 +128,50 @@ app.view('report_issue', async ({ ack, body, view, context }) => {
   }
 });
 
-
 (async () => {
-  // Start your app
   await app.start(process.env.PORT || 3020);
 
   console.log('⚡️ Bolt app is running!');
 })();
+
+function createIssue(title, description) {
+  try { // 通常時の処理
+    var base_url = process.env.BACKLOG_BASE_URL
+    var endpoint = base_url + '/api/v2/issues';
+    var apiKey = process.env.BACKLOG_API_KEY;
+    var url = endpoint + '?' + 'apiKey=' + apiKey;
+    var users_id = process.env.BACKLOG_USRE_ID;
+    var params = {
+      'projectId': process.env.BACKLOG_PROJECT_ID,
+      'summary': title,
+      'issueTypeId': process.env.ISSUE_TYPE_ID,
+      'priorityId': 2, // 優先度中
+      'description': description,
+      'notifiedUserId[]' : users_id,
+      'assigneeId': users_id
+    }
+    var options = {
+      uri: url,
+      headers: {
+        "Content-type": "application/x-www-form-urlencoded",
+      },
+      form: params
+    };
+    var request = require('request');
+    var issue_url = ''
+    request.post(options, function(error, response, body){});
+
+    // console.log('---------------------------------------');
+    // request.post(options, function(error, response, body){
+    //   console.log(response)
+    //   issue_url = process.env.BACKLOG_BASE_URL + '/view/' + body.issueKey
+    // });
+    // console.log('issue_url : ' + issue_url);
+    // return body;
+    //
+    // console.log('---------------------------------------');
+  } catch (error) {
+    console.error(error);
+  }
+
+}
