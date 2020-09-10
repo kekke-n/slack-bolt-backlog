@@ -7,18 +7,7 @@ const app = new App({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
 });
 
-app.action('button_click', async ({ body, ack, say }) => {
-  // Acknowledge the action
-  await ack();
-  await say(`<@${body.user.id}> clicked the button`);
-});
-
-app.action({ callback_id: 'report_bug'}, async({action, ack}) => {
-  await ack();
-  await say('登録しました');
-});
-
-app.shortcut('report_bug', async ({ shortcut, ack, context }) => {
+tcut('report_bug', async ({ shortcut, ack, context }) => {
   ack();
 
   try {
