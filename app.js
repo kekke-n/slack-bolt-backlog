@@ -7,7 +7,7 @@ const app = new App({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
 });
 
-tcut('report_bug', async ({ shortcut, ack, context }) => {
+app.shortcut('report_bug', async ({ shortcut, ack, context }) => {
   ack();
 
   try {
@@ -149,16 +149,6 @@ function createIssue(title, description) {
     var request = require('request');
     var issue_url = ''
     request.post(options, function(error, response, body){});
-
-    // console.log('---------------------------------------');
-    // request.post(options, function(error, response, body){
-    //   console.log(response)
-    //   issue_url = process.env.BACKLOG_BASE_URL + '/view/' + body.issueKey
-    // });
-    // console.log('issue_url : ' + issue_url);
-    // return body;
-    //
-    // console.log('---------------------------------------');
   } catch (error) {
     console.error(error);
   }
