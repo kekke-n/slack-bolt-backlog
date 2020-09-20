@@ -10,6 +10,11 @@ const app = new App({
 app.shortcut('report_bug', async ({ shortcut, ack, context }) => {
   ack();
 
+  var dateString = formatDate();
+  shortcut.message.files.forEach((f, i) => {
+    var fileName = dateString + '_' + i + '_' + f.name;
+    dowonloadFile(f.url_private, fileName);
+  });
   try {
     const result = await app.client.views.open({
       // `context` オブジェクトに保持されたトークンを使用
@@ -153,4 +158,33 @@ function createIssue(title, description) {
     console.error(error);
   }
 
+}
+
+function dowonloadFile(url, fileName){
+  // モジュールロード
+  var request = require('request');
+  var fs = require('fs');
+
+  // 出力ファイル名を指定
+  var outFile = fs.createWriteStream(fileName);
+  var token = process.env.USER_TOKEN;
+
+  var options = {
+    'url': url,
+    'headers': {
+      'Authorization': "Bearer " + token
+    }
+  };
+
+  request.get(options).pipe(outFile);
+}
+
+function formatDate(date=(new Date()), format_str=('YYYYMMDDhhmmss')){
+  format_str = format_str.replace(/YYYY/g, date.getFullYear());
+  format_str = format_str.replace(/MM/g, date.getMonth());
+  format_str = format_str.replace(/DD/g, date.getDate());
+  format_str = format_str.replace(/hh/g, date.getHours());
+  format_str = format_str.replace(/mm/g, date.getMinutes());
+  format_str = format_str.replace(/ss/g, date.getSeconds());
+  return format_str;
 }
