@@ -1,5 +1,8 @@
 require('dotenv').config();
 const { App } = require('@slack/bolt');
+const Request = require('request');
+const Fs = require('fs');
+
 
 // Initializes your app with your bot token and signing secret
 const app = new App({
@@ -16,6 +19,10 @@ app.shortcut('report_bug', async ({ shortcut, ack, context }) => {
     dowonloadFile(f.url_private, fileName);
   });
   try {
+    var responses = [];
+    await registerAttachment().then((result) => {
+      responses = result
+    });
     const result = await app.client.views.open({
       // `context` オブジェクトに保持されたトークンを使用
       token: context.botToken,
@@ -128,6 +135,54 @@ app.view('report_issue', async ({ ack, body, view, context }) => {
   console.log('⚡️ Bolt app is running!');
 })();
 
+async function registerAttachment(){
+  var async = require('async');
+  var fs = Fs
+  var reponses = []
+
+  var base_url = process.env.BACKLOG_BASE_URL
+  var endpoint = base_url + '/api/v2/space/attachment';
+  var apiKey = process.env.BACKLOG_API_KEY;
+  var url = endpoint + '?' + 'apiKey=' + apiKey;
+
+  files = fs.readdirSync('tmp/files')
+  for(let i = 0 ; i < files.length; i++){
+    var f = files[i]
+    var data = fs.readFileSync('tmp/files/' + f)
+    options = {
+      method: "POST",
+      uri: url,
+      multipart: [
+        {
+          'Content-Disposition': 'form-data; name="file"; filename="' + f + '"',
+          'Content-Type': 'application/octet-stream',
+          'body': data
+        }
+      ]
+    }
+
+    async function postFile(options){
+      var rp = require('request-promise');
+      return new Promise(async (resolve, reject) => {
+        rp(options)
+          .then(function (body) {
+              resolve(body);
+          })
+          .catch(function (err) {
+              reject(err);
+          });
+      });
+    }
+    await postFile(options).then((response) => {
+      reponses.push(response)
+    });
+  }
+  promise = new Promise(async (resolve) => {
+    resolve(reponses);
+  })
+  return promise;
+}
+
 function createIssue(title, description) {
   try { // 通常時の処理
     var base_url = process.env.BACKLOG_BASE_URL
@@ -161,12 +216,9 @@ function createIssue(title, description) {
 }
 
 function dowonloadFile(url, fileName){
-  // モジュールロード
-  var request = require('request');
-  var fs = require('fs');
-
   // 出力ファイル名を指定
-  var outFile = fs.createWriteStream(fileName);
+  var dir = 'tmp/files/'
+  var outFile = Fs.createWriteStream(dir + fileName);
   var token = process.env.USER_TOKEN;
 
   var options = {
@@ -176,7 +228,7 @@ function dowonloadFile(url, fileName){
     }
   };
 
-  request.get(options).pipe(outFile);
+  Request.get(options).pipe(outFile);
 }
 
 function formatDate(date=(new Date()), format_str=('YYYYMMDDhhmmss')){
