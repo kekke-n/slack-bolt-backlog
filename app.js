@@ -15,10 +15,12 @@ app.shortcut('report_bug', async ({ shortcut, ack, context }) => {
   ack();
   var dateString = formatDate();
   deleteAllDonwnloadedfiles();
-  shortcut.message.files.forEach((f, i) => {
-    var fileName = dateString + '_' + i + '_' + f.name;
-    dowonloadFile(f.url_private, fileName);
-  });
+  if(shortcut.message.files){
+    shortcut.message.files.forEach((f, i) => {
+      var fileName = dateString + '_' + i + '_' + f.name;
+      dowonloadFile(f.url_private, fileName);
+    });
+  }
   try {
     const result = await app.client.views.open({
       // `context` オブジェクトに保持されたトークンを使用
