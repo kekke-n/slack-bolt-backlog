@@ -2,6 +2,7 @@ require('dotenv').config();
 const { App } = require('@slack/bolt');
 const Request = require('request');
 const Fs = require('fs');
+const TEMP_FILES_DIR = 'tmp/files/'
 
 
 // Initializes your app with your bot token and signing secret
@@ -12,17 +13,13 @@ const app = new App({
 
 app.shortcut('report_bug', async ({ shortcut, ack, context }) => {
   ack();
-
   var dateString = formatDate();
+  deleteAllDonwnloadedfiles();
   shortcut.message.files.forEach((f, i) => {
     var fileName = dateString + '_' + i + '_' + f.name;
     dowonloadFile(f.url_private, fileName);
   });
   try {
-    var responses = [];
-    await registerAttachment().then((result) => {
-      responses = result
-    });
     const result = await app.client.views.open({
       // `context` オブジェクトに保持されたトークンを使用
       token: context.botToken,
@@ -94,7 +91,16 @@ app.view('report_issue', async ({ ack, body, view, context }) => {
 
   const title = view.state.values.title.plain_input.value;
   const description = view.state.values.description.plain_input.value;
-  createIssue(title, description);
+  var responses = [];
+  await registerAttachment().then((result) => {
+    responses = result
+  });
+  console.log('responses : ' + responses)
+  // convert to json
+  const attachments = responses.map((r) => {
+    return JSON.parse(r);
+  })
+  createIssue(title, description, attachments);
   try {
     const result = await app.client.views.open({
       token: context.botToken,
@@ -161,19 +167,7 @@ async function registerAttachment(){
       ]
     }
 
-    async function postFile(options){
-      var rp = require('request-promise');
-      return new Promise(async (resolve, reject) => {
-        rp(options)
-          .then(function (body) {
-              resolve(body);
-          })
-          .catch(function (err) {
-              reject(err);
-          });
-      });
-    }
-    await postFile(options).then((response) => {
+    await reqestPromise(options).then((response) => {
       reponses.push(response)
     });
   }
@@ -183,13 +177,20 @@ async function registerAttachment(){
   return promise;
 }
 
-function createIssue(title, description) {
+async function createIssue(title, description, attachments) {
   try { // 通常時の処理
     var base_url = process.env.BACKLOG_BASE_URL
     var endpoint = base_url + '/api/v2/issues';
     var apiKey = process.env.BACKLOG_API_KEY;
     var url = endpoint + '?' + 'apiKey=' + apiKey;
     var users_id = process.env.BACKLOG_USRE_ID;
+    var attachment_ids = []
+    var image_names = ''
+    attachments.forEach(a => {
+      attachment_ids.push(a.id);
+      image_names += "\n![image][" + a.name + "]"
+    })
+    description = description + image_names
     var params = {
       'projectId': process.env.BACKLOG_PROJECT_ID,
       'summary': title,
@@ -197,9 +198,11 @@ function createIssue(title, description) {
       'priorityId': 2, // 優先度中
       'description': description,
       'notifiedUserId[]' : users_id,
-      'assigneeId': users_id
+      'assigneeId': users_id,
+      'attachmentId': attachment_ids,
     }
     var options = {
+      method: "POST",
       uri: url,
       headers: {
         "Content-type": "application/x-www-form-urlencoded",
@@ -207,12 +210,29 @@ function createIssue(title, description) {
       form: params
     };
     var request = require('request');
-    var issue_url = ''
-    request.post(options, function(error, response, body){});
+    var issue_url = '';
+    var response
+    await reqestPromise(options).then((body) => {
+      deleteAllDonwnloadedfiles();
+    })
   } catch (error) {
     console.error(error);
   }
 
+}
+
+async function reqestPromise(options){
+  var rp = require('request-promise');
+  return new Promise(async (resolve, reject) => {
+    rp(options)
+      .then(function (body) {
+          resolve(body);
+      })
+      .catch(function (err) {
+          console.log('error : ' + err)
+          reject(err);
+      });
+  });
 }
 
 function dowonloadFile(url, fileName){
@@ -239,4 +259,14 @@ function formatDate(date=(new Date()), format_str=('YYYYMMDDhhmmss')){
   format_str = format_str.replace(/mm/g, date.getMinutes());
   format_str = format_str.replace(/ss/g, date.getSeconds());
   return format_str;
+}
+
+function deleteAllDonwnloadedfiles(){
+  var fs = Fs
+  // targetRemoveDirectoryPathに消したいディレクトリを指定
+  // まずは消したいフォルダの配下ファイルを削除
+  var targetRemoveFiles = fs.readdirSync(TEMP_FILES_DIR);
+  for (var file in targetRemoveFiles) {
+    fs.unlinkSync(TEMP_FILES_DIR + targetRemoveFiles[file]);
+  }
 }
