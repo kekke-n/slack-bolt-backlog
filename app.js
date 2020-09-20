@@ -265,8 +265,6 @@ function formatDate(date=(new Date()), format_str=('YYYYMMDDhhmmss')){
 
 function deleteAllDonwnloadedfiles(){
   var fs = Fs
-  // targetRemoveDirectoryPathに消したいディレクトリを指定
-  // まずは消したいフォルダの配下ファイルを削除
   var targetRemoveFiles = fs.readdirSync(TEMP_FILES_DIR);
   for (var file in targetRemoveFiles) {
     fs.unlinkSync(TEMP_FILES_DIR + targetRemoveFiles[file]);
