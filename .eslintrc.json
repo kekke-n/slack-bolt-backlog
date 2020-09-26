@@ -1,0 +1,17 @@
+{
+    "root" : true,
+    "env": {
+        "browser": true,
+        "es2021": true,
+        "jest/globals": true
+    },
+    "extends": [
+        "standard"
+    ],
+    "parserOptions": { },
+    "rules": {
+    },
+    "plugins": [
+      "jest"
+    ]
+}
